@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "QR Code Toolkit",
   description: "Modern QR code generator, reader, and scanner.",
   icons: {
-    icon: "/public/favicon.ico",
+    icon: "/favicon.ico",
   },
 };
 
