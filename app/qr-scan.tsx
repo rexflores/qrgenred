@@ -54,9 +54,8 @@ export default function QRScan() {
     try {
       const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
-      let deviceIdToUse = selectedDeviceId;
       // If device enumeration not supported, let library pick default
-      if (!deviceIdToUse) deviceIdToUse = undefined as any;
+      const deviceIdToUse = selectedDeviceId || undefined;
       const result = await codeReader.decodeOnceFromVideoDevice(
         deviceIdToUse,
         videoRef.current!
