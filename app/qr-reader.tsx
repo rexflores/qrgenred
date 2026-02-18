@@ -20,6 +20,8 @@ export default function QRReader() {
   const [dragActive, setDragActive] = useState(false);
   const [history, setHistory] = useState<Array<{ value: string, time: number }>>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const router = useRouter();
   const darkModeCtx = useContext(DarkModeContext);
   const dark = darkModeCtx?.dark ?? false;
@@ -48,6 +50,7 @@ export default function QRReader() {
       setFileUrl("");
       setImgAspect(undefined);
       setError(null);
+      setSelectedFile(null);
       return;
     }
     if (!isValidImageType(file)) {
@@ -55,10 +58,12 @@ export default function QRReader() {
       setFileUrl("");
       setImgAspect(undefined);
       setError("Unsupported file type. Please upload a PNG, JPG, WEBP, GIF, BMP, SVG, or HEIC/HEIF image.");
+      setSelectedFile(null);
       return;
     }
     setError(null);
     setFileName(file.name);
+    setSelectedFile(file);
     const url = URL.createObjectURL(file);
     setFileUrl(url);
     // Dynamically get aspect ratio
@@ -77,9 +82,9 @@ export default function QRReader() {
     setResult(null);
     setError(null);
     setLoading(true);
-    const file = fileInputRef.current?.files?.[0];
+    const file = selectedFile;
     if (!file) {
-      setError("Please select an image file.");
+      setError("Please select or capture an image file.");
       setLoading(false);
       return;
     }
@@ -184,6 +189,7 @@ export default function QRReader() {
             width: '100%',
           }}
         >
+          {/* File input for file picker */}
           <input
             id="qr-upload"
             type="file"
@@ -197,107 +203,123 @@ export default function QRReader() {
               handleFileInput(file);
             }}
           />
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label="Upload or drag image file. Tap to use camera on mobile."
-            onClick={() => fileInputRef.current?.click()}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                fileInputRef.current?.click();
-              }
-            }}
-            onDragOver={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDragActive(true);
-            }}
-            onDragEnter={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDragActive(true);
-            }}
-            onDragLeave={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDragActive(false);
-            }}
-            onDrop={e => {
-              e.preventDefault();
-              e.stopPropagation();
-              setDragActive(false);
-              const file = e.dataTransfer.files?.[0];
-              if (!file) return;
-              if (!isValidImageType(file)) {
-                setFileName("");
-                setFileUrl("");
-                setImgAspect(undefined);
-                setError("Unsupported file type. Please upload a PNG, JPG, WEBP, GIF, BMP, SVG, or HEIC/HEIF image.");
-                return;
-              }
+          {/* File input for camera capture */}
+          <input
+            id="qr-upload-camera"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            ref={cameraInputRef}
+            style={{ display: 'none' }}
+            onChange={e => {
+              const file = e.target.files?.[0];
               handleFileInput(file);
-              // Set the file input's files property so handleDecode works
-              if (fileInputRef.current) {
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                fileInputRef.current.files = dataTransfer.files;
-              }
             }}
-            style={{
-              width: 320,
-              height: 120,
-              border: dragActive
-                ? `2.5px solid ${dark ? '#818cf8' : '#6366f1'}`
-                : `2px dashed ${dark ? '#a5b4fc' : '#818cf8'}`,
-              borderRadius: 12,
-              background: dragActive
-                ? (dark ? '#312e81' : '#e0e7ff')
-                : (dark ? '#23272f' : '#f3f4f6'),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: dark ? '#a5b4fc' : '#6366f1',
-              fontWeight: 600,
-              fontSize: 18,
-              cursor: 'pointer',
-              transition: 'border 0.2s, background 0.2s',
-              boxShadow: dragActive
-                ? (dark ? '0 0 0 3px #818cf8' : '0 0 0 3px #818cf8')
-                : (dark ? '0 2px 8px #0008' : '0 2px 8px #e0e7ff22'),
-              margin: '0 auto',
-              textAlign: 'center',
-              userSelect: 'none',
-              position: 'relative',
-              outline: 'none',
-            }}
-            onFocus={e => e.currentTarget.style.boxShadow = '0 0 0 3px #818cf8'}
-            onBlur={e => e.currentTarget.style.boxShadow = '0 2px 8px #818cf822'}
-          >
-            <span>Upload here or drag file</span>
-            <span style={{
-              position: 'absolute',
-              right: 12,
-              bottom: 10,
-              fontSize: 22,
-              opacity: 0.7,
-              pointerEvents: 'none',
-              display: 'none',
-            }}
-            className="mobile-camera-hint"
-            >📷</span>
-            <span style={{
-              position: 'absolute',
-              left: 0,
-              right: 0,
-              bottom: 6,
-              fontSize: 13,
-              color: '#818cf8',
-              opacity: 0.85,
-              display: 'none',
-            }}
-            className="mobile-camera-hint"
-            >Tap to use camera on mobile</span>
+          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
+            <div
+              role="button"
+              tabIndex={0}
+              aria-label="Upload or drag image file."
+              onClick={() => fileInputRef.current?.click()}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  fileInputRef.current?.click();
+                }
+              }}
+              onDragOver={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragActive(true);
+              }}
+              onDragEnter={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragActive(true);
+              }}
+              onDragLeave={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragActive(false);
+              }}
+              onDrop={e => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDragActive(false);
+                const file = e.dataTransfer.files?.[0];
+                if (!file) return;
+                if (!isValidImageType(file)) {
+                  setFileName("");
+                  setFileUrl("");
+                  setImgAspect(undefined);
+                  setError("Unsupported file type. Please upload a PNG, JPG, WEBP, GIF, BMP, SVG, or HEIC/HEIF image.");
+                  return;
+                }
+                handleFileInput(file);
+                // Set the file input's files property so handleDecode works
+                if (fileInputRef.current) {
+                  const dataTransfer = new DataTransfer();
+                  dataTransfer.items.add(file);
+                  fileInputRef.current.files = dataTransfer.files;
+                }
+              }}
+              style={{
+                width: 320,
+                height: 60,
+                border: dragActive
+                  ? `2.5px solid ${dark ? '#818cf8' : '#6366f1'}`
+                  : `2px dashed ${dark ? '#a5b4fc' : '#818cf8'}`,
+                borderRadius: 12,
+                background: dragActive
+                  ? (dark ? '#312e81' : '#e0e7ff')
+                  : (dark ? '#23272f' : '#f3f4f6'),
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: dark ? '#a5b4fc' : '#6366f1',
+                fontWeight: 600,
+                fontSize: 18,
+                cursor: 'pointer',
+                transition: 'border 0.2s, background 0.2s',
+                boxShadow: dragActive
+                  ? (dark ? '0 0 0 3px #818cf8' : '0 0 0 3px #818cf8')
+                  : (dark ? '0 2px 8px #0008' : '0 2px 8px #e0e7ff22'),
+                margin: '0 auto',
+                textAlign: 'center',
+                userSelect: 'none',
+                position: 'relative',
+                outline: 'none',
+              }}
+              onFocus={e => e.currentTarget.style.boxShadow = '0 0 0 3px #818cf8'}
+              onBlur={e => e.currentTarget.style.boxShadow = '0 2px 8px #818cf822'}
+            >
+              <span>Upload from device or drag file</span>
+            </div>
+            <button
+              type="button"
+              style={{
+                width: 320,
+                height: 48,
+                borderRadius: 12,
+                background: dark ? '#312e81' : '#e0e7ff',
+                color: dark ? '#a5b4fc' : '#6366f1',
+                fontWeight: 600,
+                fontSize: 18,
+                border: `2px solid ${dark ? '#818cf8' : '#6366f1'}`,
+                margin: '0 auto',
+                cursor: 'pointer',
+                marginTop: 4,
+                boxShadow: dark ? '0 2px 8px #0008' : '0 2px 8px #e0e7ff22',
+                transition: 'border 0.2s, background 0.2s',
+              }}
+              aria-label="Use camera to capture image"
+              onClick={() => {
+                cameraInputRef.current?.click();
+              }}
+            >
+              Use Camera
+            </button>
           </div>
         </div>
         {fileName && (

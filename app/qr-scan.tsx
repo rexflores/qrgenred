@@ -14,12 +14,30 @@ export default function QRScan() {
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
   const codeReaderRef = useRef<BrowserQRCodeReader | null>(null);
+  const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("");
   const darkModeCtx = useContext(DarkModeContext);
   const dark = darkModeCtx?.dark ?? false;
 
   useEffect(() => {
+    // List cameras on mount, handle unsupported browsers
+    let isMounted = true;
+    BrowserQRCodeReader.listVideoInputDevices()
+      .then(devices => {
+        if (!isMounted) return;
+        setVideoDevices(devices);
+        if (devices.length > 0) {
+          setSelectedDeviceId(devices[0].deviceId);
+        }
+      })
+      .catch(() => {
+        // Fallback: no camera enumeration support
+        setVideoDevices([]);
+        setSelectedDeviceId("");
+      });
     const videoEl = videoRef.current;
     return () => {
+      isMounted = false;
       // Cleanup on unmount
       if (videoEl && videoEl.srcObject) {
         (videoEl.srcObject as MediaStream)
@@ -36,15 +54,11 @@ export default function QRScan() {
     try {
       const codeReader = new BrowserQRCodeReader();
       codeReaderRef.current = codeReader;
-      const videoInputDevices = await BrowserQRCodeReader.listVideoInputDevices();
-      if (videoInputDevices.length === 0) {
-        setError("No camera found.");
-        setScanning(false);
-        return;
-      }
-      const selectedDeviceId = videoInputDevices[0].deviceId;
+      let deviceIdToUse = selectedDeviceId;
+      // If device enumeration not supported, let library pick default
+      if (!deviceIdToUse) deviceIdToUse = undefined as any;
       const result = await codeReader.decodeOnceFromVideoDevice(
-        selectedDeviceId,
+        deviceIdToUse,
         videoRef.current!
       );
       setResult(result.getText());
@@ -112,6 +126,41 @@ export default function QRScan() {
           <FiChevronLeft size={36} />
         </button>
         <h1 style={{ marginBottom: 18, fontSize: 28, fontWeight: 700, letterSpacing: -1, color: dark ? '#f3f4f6' : '#222' }}>QR Code Scanner</h1>
+        {/* Camera switcher (only if supported) */}
+        {videoDevices.length > 1 && (
+          <div style={{ marginBottom: 16, textAlign: 'left' }}>
+            <label htmlFor="camera-select" style={{ fontWeight: 500, color: dark ? '#a5b4fc' : '#6366f1', fontSize: 15, marginRight: 8 }}>Camera:</label>
+            <select
+              id="camera-select"
+              value={selectedDeviceId}
+              onChange={e => setSelectedDeviceId(e.target.value)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: 6,
+                border: `1.5px solid ${dark ? '#312e81' : '#e0e7ff'}`,
+                background: dark ? '#18181b' : '#fff',
+                color: dark ? '#a5b4fc' : '#222',
+                fontWeight: 500,
+                fontSize: 15,
+                outline: 'none',
+                marginLeft: 4,
+                marginBottom: 0,
+              }}
+              disabled={scanning}
+            >
+              {videoDevices.map(device => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || `Camera ${device.deviceId.slice(-4)}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {videoDevices.length === 0 && (
+          <div style={{ marginBottom: 16, color: dark ? '#a5b4fc' : '#6366f1', fontWeight: 500, fontSize: 15 }}>
+            Camera switch not supported on this device/browser. Default camera will be used.
+          </div>
+        )}
         <div style={{ margin: '1.5rem 0' }}>
           <video
             ref={videoRef}
