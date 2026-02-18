@@ -1,65 +1,42 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { useContext } from "react";
+import { DarkModeContext } from "./DarkModeProvider";
 
 export default function Home() {
+  const ctx = useContext(DarkModeContext);
+  const dark = ctx?.dark ?? false;
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>To get started, edit the page.tsx file.</h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div style={{
+      minHeight: '100vh',
+      background: dark
+        ? 'linear-gradient(135deg, #18181b 0%, #312e81 100%)'
+        : 'linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontFamily: 'Inter, Segoe UI, Arial, sans-serif',
+      transition: 'background 0.3s',
+    }}>
+      <main style={{
+        background: dark ? '#23272f' : '#fff',
+        borderRadius: 16,
+        boxShadow: dark ? '0 4px 32px #0008' : '0 4px 32px #b6b6e633',
+        padding: 48,
+        minWidth: 340,
+        maxWidth: 420,
+        width: '100%',
+        textAlign: 'center',
+        color: dark ? '#f3f4f6' : '#222',
+        transition: 'background 0.3s, color 0.3s',
+      }}>
+        <h1 style={{ fontSize: 32, fontWeight: 700, marginBottom: 8, letterSpacing: -1, color: dark ? '#f3f4f6' : '#222' }}>QR Code Toolkit</h1>
+        <p style={{ color: dark ? '#a3a3a3' : '#666', marginBottom: 32 }}>Generate, read, and scan QR codes easily in your browser.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+          <a href="/qr-generator" style={{ padding: '14px 0', borderRadius: 8, background: 'linear-gradient(90deg, #6366f1 0%, #818cf8 100%)', color: '#fff', fontWeight: 600, textDecoration: 'none', fontSize: 18, transition: 'background 0.2s', boxShadow: '0 2px 8px #6366f122' }}>QR Code Generator</a>
+          <a href="/qr-reader" style={{ padding: '14px 0', borderRadius: 8, background: 'linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%)', color: '#fff', fontWeight: 600, textDecoration: 'none', fontSize: 18, transition: 'background 0.2s', boxShadow: '0 2px 8px #0ea5e922' }}>QR Code Reader</a>
+          <a href="/qr-scan" style={{ padding: '14px 0', borderRadius: 8, background: 'linear-gradient(90deg, #22c55e 0%, #4ade80 100%)', color: '#fff', fontWeight: 600, textDecoration: 'none', fontSize: 18, transition: 'background 0.2s', boxShadow: '0 2px 8px #22c55e22' }}>QR Code Scanner</a>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+        {/* Footer removed as requested */}
       </main>
     </div>
   );
