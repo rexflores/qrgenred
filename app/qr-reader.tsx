@@ -191,7 +191,6 @@ export default function QRReader() {
             ref={fileInputRef}
             aria-label="Upload QR code image"
             style={{ display: 'none' }}
-            capture="environment"
             tabIndex={-1}
             onChange={e => {
               const file = e.target.files?.[0];
