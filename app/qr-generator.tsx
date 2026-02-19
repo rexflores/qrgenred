@@ -12,6 +12,42 @@ function QRGenerator() {
   const darkModeCtx = useContext(DarkModeContext);
   const dark = darkModeCtx?.dark ?? false;
 
+  const [downloadFormat, setDownloadFormat] = useState<'png' | 'jpg'>('png');
+  const [downloadSize, setDownloadSize] = useState<number>(300);
+
+  const handleDownload = async () => {
+    if (!svgRef.current) return;
+    const svg = svgRef.current;
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const canvas = document.createElement('canvas');
+    const img = new window.Image();
+    const size = downloadSize;
+    canvas.width = size;
+    canvas.height = size;
+    img.onload = async function () {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, size, size);
+        ctx.drawImage(img, 0, 0, size, size);
+        let url;
+        if (downloadFormat === 'png') {
+          url = canvas.toDataURL('image/png');
+        } else {
+          url = canvas.toDataURL('image/jpeg', 0.95);
+        }
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qr-code.${downloadFormat}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    };
+    img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -110,101 +146,59 @@ function QRGenerator() {
         <div style={{ marginTop: 32 }}>
           {qrValue && (
             <>
-              <QRCodeSVG
-                value={qrValue}
-                size={200}
-                ref={svgRef}
-                style={{ background: dark ? '#18181b' : '#fff', borderRadius: 8 }}
-              />
+              <div style={{ padding: 16, background: dark ? '#18181b' : '#fff', display: 'inline-block', borderRadius: 0 }}>
+                <QRCodeSVG
+                  value={qrValue}
+                  size={200}
+                  ref={svgRef}
+                  style={{ background: 'transparent', borderRadius: 0 }}
+                />
+              </div>
               <br />
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center', marginTop: 16 }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <label htmlFor="format-select" style={{ fontWeight: 600 }}>Format:</label>
+                  <select
+                    id="format-select"
+                    value={downloadFormat}
+                    onChange={e => setDownloadFormat(e.target.value as 'png' | 'jpg')}
+                    style={{ padding: '6px 12px', borderRadius: 6, fontSize: 16, background: '#fff', color: '#222' }}
+                  >
+                    <option value="png">PNG</option>
+                    <option value="jpg">JPG</option>
+                  </select>
+                  <label htmlFor="size-select" style={{ fontWeight: 600, marginLeft: 16 }}>Size:</label>
+                  <select
+                    id="size-select"
+                    value={downloadSize}
+                    onChange={e => setDownloadSize(Number(e.target.value))}
+                    style={{ padding: '6px 12px', borderRadius: 6, fontSize: 16, background: '#fff', color: '#222' }}
+                  >
+                    <option value={300}>300 x 300 px</option>
+                    <option value={1000}>1000 x 1000 px</option>
+                    <option value={2000}>2000 x 2000 px</option>
+                  </select>
+                </div>
                 <button
                   style={{
                     padding: '10px 28px',
                     fontSize: 16,
                     borderRadius: 8,
-                    background: 'linear-gradient(90deg, #6366f1 0%, #818cf8 100%)',
+                    background: downloadFormat === 'png'
+                      ? 'linear-gradient(90deg, #6366f1 0%, #818cf8 100%)'
+                      : 'linear-gradient(90deg, #f59e42 0%, #fbbf24 100%)',
                     color: '#fff',
                     border: 'none',
                     fontWeight: 600,
                     cursor: 'pointer',
                     boxShadow: dark ? '0 2px 8px #312e81' : '0 2px 8px #6366f122',
                     transition: 'background 0.2s',
+                    marginTop: 8,
                   }}
-                  onClick={async () => {
-                    if (!svgRef.current) return;
-                    const svg = svgRef.current;
-                    const serializer = new XMLSerializer();
-                    const svgString = serializer.serializeToString(svg);
-                    const canvas = document.createElement('canvas');
-                    const img = new window.Image();
-                    const size = 1200; // Ultra high-res export
-                    canvas.width = size;
-                    canvas.height = size;
-                    img.onload = async function () {
-                      const ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.fillStyle = '#fff';
-                        ctx.fillRect(0, 0, size, size);
-                        ctx.drawImage(img, 0, 0, size, size);
-                        const url = canvas.toDataURL('image/png');
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'qr-code.png';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      }
-                    };
-                    img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
-                  }}
-                  aria-label="Download QR code as PNG"
+                  onClick={handleDownload}
+                  aria-label="Download QR code"
                 >
-                  Download as PNG
-                </button>
-                <button
-                  style={{
-                    padding: '10px 28px',
-                    fontSize: 16,
-                    borderRadius: 8,
-                    background: 'linear-gradient(90deg, #f59e42 0%, #fbbf24 100%)',
-                    color: '#fff',
-                    border: 'none',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    boxShadow: dark ? '0 2px 8px #18181b' : '0 2px 8px #f59e4222',
-                    transition: 'background 0.2s',
-                  }}
-                  onClick={async () => {
-                    if (!svgRef.current) return;
-                    const svg = svgRef.current;
-                    const serializer = new XMLSerializer();
-                    const svgString = serializer.serializeToString(svg);
-                    const canvas = document.createElement('canvas');
-                    const img = new window.Image();
-                    const size = 1200; // Ultra high-res export
-                    canvas.width = size;
-                    canvas.height = size;
-                    img.onload = async function () {
-                      const ctx = canvas.getContext('2d');
-                      if (ctx) {
-                        ctx.fillStyle = '#fff';
-                        ctx.fillRect(0, 0, size, size);
-                        ctx.drawImage(img, 0, 0, size, size);
-                        const url = canvas.toDataURL('image/jpeg', 0.95);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'qr-code.jpg';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                      }
-                    };
-                    img.src = 'data:image/svg+xml;base64,' + window.btoa(unescape(encodeURIComponent(svgString)));
-                  }}
-                  aria-label="Download QR code as JPG"
-                >
-                  Download as JPG
+                  Download
                 </button>
               </div>
             </>
